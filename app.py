@@ -13,6 +13,7 @@ RESERVATION_FILE = 'reservations.json'
 # 파일이 없으면 생성
 def initialize_files():
     if not os.path.exists(SCHEDULE_FILE):
+        with open(SCHEDULE_FILE, 'w') as f:
             json.dump({}, f)
     
     if not os.path.exists(RESERVATION_FILE):
@@ -142,4 +143,4 @@ def get_reservations(date):
         return jsonify([])
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)
