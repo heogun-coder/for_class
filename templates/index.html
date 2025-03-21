@@ -2,14 +2,32 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>메인 페이지</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실험실 관리 시스템</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>환영합니다!</h1>
-    <a href="{{ url_for('calendar') }}">달력 보기</a>
-    <a href="/reservation">실험실 예약</a>
-    <div id="clock"></div>
+    <div class="container">
+        <header>
+            <h1>실험실 관리 시스템</h1>
+            <div id="clock" class="clock"></div>
+        </header>
+
+        <div class="main-menu">
+            <div class="menu-item">
+                <a href="{{ url_for('calendar') }}" class="menu-button">
+                    <img src="{{ url_for('static', filename='calendar-icon.png') }}" alt="Calendar" class="menu-icon">
+                    <span>일정 관리</span>
+                </a>
+            </div>
+            <div class="menu-item">
+                <a href="{{ url_for('reservation') }}" class="menu-button">
+                    <img src="{{ url_for('static', filename='lab-icon.png') }}" alt="Lab" class="menu-icon">
+                    <span>실험실 예약</span>
+                </a>
+            </div>
+        </div>
+    </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
-</html>
+</html> 

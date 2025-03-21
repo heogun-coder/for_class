@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일정 관리 - 실험실 관리 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>일정 관리</h1>
+            <div id="clock" class="clock"></div>
+            <a href="{{ url_for('index') }}" class="back-button">메인으로 돌아가기</a>
+        </header>
+
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <button id="prevMonth">&lt;</button>
+                <h2 id="currentMonth"></h2>
+                <button id="nextMonth">&gt;</button>
+            </div>
+            <div class="weekdays">
+                <div>일</div>
+                <div>월</div>
+                <div>화</div>
+                <div>수</div>
+                <div>목</div>
+                <div>금</div>
+                <div>토</div>
+            </div>
+            <div id="calendar" class="days"></div>
+        </div>
+
+        <!-- 일정 보기 모달 -->
+        <div id="scheduleViewModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeViewModal()">&times;</span>
+                <h2 id="scheduleDate"></h2>
+                <div id="scheduleList"></div>
+                <button onclick="openAddModal()">새 일정 추가</button>
+            </div>
+        </div>
+
+        <!-- 일정 추가 모달 -->
+        <div id="scheduleAddModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAddModal()">&times;</span>
+                <h2>새 일정 추가</h2>
+                <form id="scheduleForm" action="/add_schedule" method="post">
+                    <input type="hidden" id="selectedDate" name="date">
+                    <div class="form-group">
+                        <label for="title">제목:</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">설명:</label>
+                        <textarea id="description" name="description" rows="4"></textarea>
+                    </div>
+                    <button type="submit">저장</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html> 
