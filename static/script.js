@@ -197,7 +197,10 @@ function openViewScheduleModal(date) {
                 schedules.forEach(schedule => {
                     html += `
                         <div class="schedule-item">
-                            <h4>${schedule.title}</h4>
+                            <div class="schedule-header">
+                                <h4>${schedule.title}</h4>
+                                <button class="delete-btn" onclick="deleteSchedule(${schedule.id})">삭제</button>
+                            </div>
                             <p>${schedule.description || '설명 없음'}</p>
                         </div>
                     `;
@@ -211,6 +214,34 @@ function openViewScheduleModal(date) {
             console.error('일정을 불러오는 중 오류가 발생했습니다:', error);
             document.getElementById('scheduleList').innerHTML = '<p>일정을 불러오는 중 오류가 발생했습니다.</p>';
         });
+}
+
+// 일정 삭제 함수
+function deleteSchedule(scheduleId) {
+    if (!confirm('정말로 이 일정을 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    fetch(`/delete_schedule/${scheduleId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('일정이 삭제되었습니다.');
+            // 현재 보고 있는 날짜의 일정 다시 로드
+            openViewScheduleModal(selectedDate);
+        } else {
+            alert(data.message || '일정 삭제 중 오류가 발생했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('일정 삭제 중 오류가 발생했습니다:', error);
+        alert('일정 삭제 중 오류가 발생했습니다.');
+    });
 }
 
 // 일정 추가 모달 열기
@@ -244,9 +275,17 @@ function showReservations(date) {
             if (reservations.length > 0) {
                 let html = '';
                 reservations.forEach(reservation => {
+                    // 삭제 버튼 (자신의 예약인 경우에만 표시)
+                    const deleteButton = reservation.is_owner 
+                        ? `<button class="delete-btn" onclick="deleteReservation(${reservation.id})">삭제</button>` 
+                        : '';
+                    
                     html += `
-                        <div class="reservation-slot">
-                            <p><strong>시간:</strong> ${reservation.time}</p>
+                        <div class="reservation-slot ${reservation.is_owner ? 'my-reservation' : ''}">
+                            <div class="reservation-header">
+                                <strong>시간: ${reservation.time}</strong>
+                                ${deleteButton}
+                            </div>
                             <p><strong>예약자:</strong> ${reservation.name}</p>
                             <p><strong>목적:</strong> ${reservation.purpose}</p>
                         </div>
@@ -326,6 +365,34 @@ function handleReservationSubmit(event) {
     .catch(error => {
         console.error('예약 처리 중 오류가 발생했습니다:', error);
         alert('예약 처리 중 오류가 발생했습니다.');
+    });
+}
+
+// 예약 삭제 함수
+function deleteReservation(reservationId) {
+    if (!confirm('정말로 이 예약을 취소하시겠습니까?')) {
+        return;
+    }
+    
+    fetch(`/delete_reservation/${reservationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('예약이 취소되었습니다.');
+            // 현재 보고 있는 날짜의 예약 정보 다시 로드
+            showReservations(selectedDate);
+        } else {
+            alert(data.message || '예약 취소 중 오류가 발생했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('예약 취소 중 오류가 발생했습니다:', error);
+        alert('예약 취소 중 오류가 발생했습니다.');
     });
 }
 

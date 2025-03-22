@@ -252,8 +252,16 @@ button[type="submit"]:hover,
     border-radius: 4px;
 }
 
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
 .schedule-item h4 {
     margin-bottom: 5px;
+    margin: 0;
 }
 
 .schedule-item p {
@@ -296,6 +304,34 @@ button[type="submit"]:hover,
     background-color: #f1f8fe;
     border-left: 4px solid #4a6fdc;
     border-radius: 4px;
+}
+
+.reservation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+/* 내 예약 강조 스타일 */
+.my-reservation {
+    background-color: #e6f7ff;
+    border-left: 4px solid #1890ff;
+}
+
+/* 삭제 버튼 스타일 */
+.delete-btn {
+    background-color: #ff4d4f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    background-color: #ff7875;
 }
 
 /* 인증 페이지 스타일 */

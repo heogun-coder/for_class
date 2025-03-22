@@ -180,6 +180,23 @@ def get_schedules(date):
     
     return jsonify(result)
 
+# 일정 삭제 API
+@app.route('/delete_schedule/<int:schedule_id>', methods=['POST'])
+@login_required
+def delete_schedule(schedule_id):
+    schedule = Schedule.query.get_or_404(schedule_id)
+    
+    # 자신의 일정만 삭제할 수 있도록 확인
+    if schedule.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '삭제 권한이 없습니다.'}), 403
+    
+    date = schedule.date  # 삭제 후 리디렉션을 위해 날짜 저장
+    
+    db.session.delete(schedule)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
 # 실험실 예약 페이지
 @app.route('/reservation')
 @login_required
@@ -241,10 +258,26 @@ def get_reservations(date):
             'time': reservation.time,
             'name': user.username,
             'purpose': reservation.purpose,
-            'created_at': reservation.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': reservation.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_owner': reservation.user_id == current_user.id  # 자신의 예약인지 확인
         })
     
     return jsonify(result)
+
+# 예약 삭제 API
+@app.route('/delete_reservation/<int:reservation_id>', methods=['POST'])
+@login_required
+def delete_reservation(reservation_id):
+    reservation = Reservation.query.get_or_404(reservation_id)
+    
+    # 자신의 예약만 삭제할 수 있도록 확인
+    if reservation.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '삭제 권한이 없습니다.'}), 403
+    
+    db.session.delete(reservation)
+    db.session.commit()
+    
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     app.run(debug=True) 
