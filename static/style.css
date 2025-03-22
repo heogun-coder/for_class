@@ -86,6 +86,11 @@ h1 {
     margin-bottom: 15px;
     border-radius: 15px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa;
+    font-size: 50px;
 }
 
 /* 달력 스타일 */
@@ -399,4 +404,12 @@ button[type="submit"]:hover,
 
 .logout-btn:hover {
     background-color: #c82333;
+}
+
+.calendar-icon {
+    background-color: #e8f4ff;
+}
+
+.lab-icon {
+    background-color: #e8fff0;
 } 
