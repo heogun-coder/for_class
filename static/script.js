@@ -303,7 +303,6 @@ function handleReservationSubmit(event) {
     
     const date = document.getElementById('reservationSelectedDate').value;
     const time = document.getElementById('time').value;
-    const name = document.getElementById('name').value;
     const purpose = document.getElementById('purpose').value;
     
     // 서버에 예약 정보 전송
@@ -312,7 +311,7 @@ function handleReservationSubmit(event) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `date=${date}&time=${time}&name=${name}&purpose=${purpose}`,
+        body: `date=${date}&time=${time}&purpose=${purpose}`,
     })
     .then(response => response.json())
     .then(data => {
@@ -334,4 +333,4 @@ function handleReservationSubmit(event) {
 function formatDisplayDate(dateString) {
     const parts = dateString.split('-');
     return `${parts[0]}년 ${parts[1]}월 ${parts[2]}일`;
-}
+} 

@@ -10,7 +10,11 @@
     <div class="container">
         <header>
             <h1>일정 관리</h1>
-            <div id="clock" class="clock"></div>
+            <div class="user-info">
+                <div id="clock" class="clock"></div>
+                <div class="user-name">{{ current_user.username }}님 환영합니다</div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">로그아웃</a>
+            </div>
             <a href="{{ url_for('index') }}" class="back-button">메인으로 돌아가기</a>
         </header>
 

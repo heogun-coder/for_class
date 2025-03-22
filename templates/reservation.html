@@ -10,7 +10,11 @@
     <div class="container">
         <header>
             <h1>실험실 예약</h1>
-            <div id="clock" class="clock"></div>
+            <div class="user-info">
+                <div id="clock" class="clock"></div>
+                <div class="user-name">{{ current_user.username }}님 환영합니다</div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">로그아웃</a>
+            </div>
             <a href="{{ url_for('index') }}" class="back-button">메인으로 돌아가기</a>
         </header>
 
@@ -53,10 +57,6 @@
                         <select id="time" name="time" required>
                             <option value="">시간을 선택하세요</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="name">이름:</label>
-                        <input type="text" id="name" name="name" required>
                     </div>
                     <div class="form-group">
                         <label for="purpose">사용 목적:</label>
