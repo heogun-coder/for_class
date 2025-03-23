@@ -250,15 +250,19 @@ def get_available_slots(date):
     
     return jsonify(available_slots)
 
-# 실험실 예약 API
-@app.route('/make_reservation', methods=['POST'])
+# 예약 생성 API
+@app.route('/add_reservation', methods=['POST'])
 @login_required
-def make_reservation():
+def add_reservation():
     date = request.form.get('date')
     time = request.form.get('time')
     purpose = request.form.get('purpose')
     
-    # 중복 예약 확인
+    # 입력값 검증
+    if not date or not time or not purpose:
+        return jsonify({'success': False, 'message': '모든 필드를 입력해주세요.'})
+    
+    # 예약 중복 검사
     existing_reservation = Reservation.query.filter_by(date=date, time=time).first()
     if existing_reservation:
         return jsonify({'success': False, 'message': '이미 예약된 시간입니다.'})
