@@ -26,6 +26,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
+    is_admin = db.Column(db.Boolean, default=False)  # 관리자 여부
     
     # 일정 및 예약과의 관계 설정
     schedules = db.relationship('Schedule', backref='user', lazy=True)
@@ -57,6 +58,13 @@ class Reservation(db.Model):
     
     __table_args__ = (db.UniqueConstraint('date', 'time', name='_date_time_uc'),)
 
+# 할 일 모델
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    due_date = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -64,6 +72,28 @@ def load_user(user_id):
 # 데이터베이스 생성
 with app.app_context():
     db.create_all()
+    
+    # admin 계정 생성 (처음 실행 시에만)
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
+        admin = User(username='admin', email='admin@example.com', is_admin=True)
+        admin.set_password('gjrjs1211!')
+        db.session.add(admin)
+        db.session.commit()
+        
+        # 초기 할 일 데이터 추가
+        tasks = [
+            Task(title="레포트 작성 마감", due_date="2025-06-10"),
+            Task(title="중간고사 대비 스터디", due_date="2025-06-15"),
+            Task(title="실험 데이터 분석", due_date="2025-06-20"),
+            Task(title="논문 초안 제출", due_date="2025-06-25"),
+            Task(title="팀 프로젝트 발표", due_date="2025-06-30")
+        ]
+        
+        for task in tasks:
+            db.session.add(task)
+        
+        db.session.commit()
 
 # 로그인 페이지
 @app.route('/login', methods=['GET', 'POST'])
@@ -135,7 +165,9 @@ def register():
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html')
+    # 마감일이 가까운 할 일 5개 가져오기
+    upcoming_tasks = Task.query.order_by(Task.due_date).limit(5).all()
+    return render_template('index.html', upcoming_tasks=upcoming_tasks)
 
 # 달력 페이지
 @app.route('/calendar')
@@ -186,8 +218,8 @@ def get_schedules(date):
 def delete_schedule(schedule_id):
     schedule = Schedule.query.get_or_404(schedule_id)
     
-    # 자신의 일정만 삭제할 수 있도록 확인
-    if schedule.user_id != current_user.id:
+    # 관리자이거나 자신의 일정만 삭제할 수 있도록 확인
+    if not current_user.is_admin and schedule.user_id != current_user.id:
         return jsonify({'success': False, 'message': '삭제 권한이 없습니다.'}), 403
     
     date = schedule.date  # 삭제 후 리디렉션을 위해 날짜 저장
@@ -270,11 +302,62 @@ def get_reservations(date):
 def delete_reservation(reservation_id):
     reservation = Reservation.query.get_or_404(reservation_id)
     
-    # 자신의 예약만 삭제할 수 있도록 확인
-    if reservation.user_id != current_user.id:
+    # 관리자이거나 자신의 예약만 삭제할 수 있도록 확인
+    if not current_user.is_admin and reservation.user_id != current_user.id:
         return jsonify({'success': False, 'message': '삭제 권한이 없습니다.'}), 403
     
     db.session.delete(reservation)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+# 할 일 목록 API
+@app.route('/get_tasks')
+@login_required
+def get_tasks():
+    tasks = Task.query.order_by(Task.due_date).all()
+    
+    result = []
+    for task in tasks:
+        result.append({
+            'id': task.id,
+            'title': task.title,
+            'due_date': task.due_date,
+            'created_at': task.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        })
+    
+    return jsonify(result)
+
+# 할 일 추가 API (관리자만)
+@app.route('/add_task', methods=['POST'])
+@login_required
+def add_task():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': '관리자만 추가할 수 있습니다.'}), 403
+    
+    title = request.form.get('title')
+    due_date = request.form.get('due_date')
+    
+    new_task = Task(
+        title=title,
+        due_date=due_date
+    )
+    
+    db.session.add(new_task)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+# 할 일 삭제 API (관리자만)
+@app.route('/delete_task/<int:task_id>', methods=['POST'])
+@login_required
+def delete_task(task_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': '관리자만 삭제할 수 있습니다.'}), 403
+    
+    task = Task.query.get_or_404(task_id)
+    
+    db.session.delete(task)
     db.session.commit()
     
     return jsonify({'success': True})

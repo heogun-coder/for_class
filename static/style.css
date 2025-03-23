@@ -412,4 +412,86 @@ button[type="submit"]:hover,
 
 .lab-icon {
     background-color: #e8fff0;
+}
+
+/* 관리자 배지 스타일 */
+.admin-badge {
+    background-color: #dc3545;
+    color: white;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    margin-left: 10px;
+}
+
+/* 할 일 목록 스타일 */
+.upcoming-tasks {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.upcoming-tasks h2 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.task-list {
+    list-style: none;
+    padding: 0;
+}
+
+.task-item {
+    border-left: 4px solid #ffc107;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    background-color: #fffbeb;
+    border-radius: 4px;
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.task-title {
+    font-weight: bold;
+    flex-grow: 1;
+}
+
+.task-date {
+    color: #dc3545;
+    font-size: 0.9rem;
+}
+
+#addTaskBtn {
+    margin-top: 15px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#addTaskBtn:hover {
+    background-color: #218838;
+}
+
+.btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #0069d9;
 } 

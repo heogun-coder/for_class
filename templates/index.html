@@ -14,8 +14,36 @@
                 <div id="clock" class="clock"></div>
                 <div class="user-name">{{ current_user.username }}님 환영합니다</div>
                 <a href="{{ url_for('logout') }}" class="logout-btn">로그아웃</a>
+                {% if current_user.is_admin %}
+                <span class="admin-badge">관리자</span>
+                {% endif %}
             </div>
         </header>
+        
+        <div class="upcoming-tasks">
+            <h2>다가오는 중요 일정</h2>
+            {% if upcoming_tasks %}
+                <ul class="task-list">
+                    {% for task in upcoming_tasks %}
+                    <li class="task-item">
+                        <div class="task-header">
+                            <span class="task-title">{{ task.title }}</span>
+                            <span class="task-date">기한: {{ task.due_date }}</span>
+                            {% if current_user.is_admin %}
+                            <button class="delete-btn" onclick="deleteTask('{{ task.id }}')">삭제</button>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>등록된 일정이 없습니다.</p>
+            {% endif %}
+            
+            {% if current_user.is_admin %}
+            <button id="addTaskBtn" class="btn">새 일정 추가</button>
+            {% endif %}
+        </div>
 
         <div class="main-menu">
             <div class="menu-item">
@@ -32,6 +60,101 @@
             </div>
         </div>
     </div>
+    
+    <!-- 할 일 추가 모달 (관리자만) -->
+    {% if current_user.is_admin %}
+    <div id="addTaskModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>새 일정 추가</h2>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="taskTitle">제목</label>
+                    <input type="text" id="taskTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="taskDueDate">기한</label>
+                    <input type="date" id="taskDueDate" name="due_date" required>
+                </div>
+                <button type="submit" class="btn">추가</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    
+    {% if current_user.is_admin %}
+    <script>
+        // 할 일 추가 모달 기능
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const addTaskModal = document.getElementById('addTaskModal');
+        const closeBtn = addTaskModal.querySelector('.close');
+        const taskForm = document.getElementById('taskForm');
+        
+        addTaskBtn.addEventListener('click', function() {
+            addTaskModal.style.display = 'block';
+        });
+        
+        closeBtn.addEventListener('click', function() {
+            addTaskModal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target == addTaskModal) {
+                addTaskModal.style.display = 'none';
+            }
+        });
+        
+        taskForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('title', document.getElementById('taskTitle').value);
+            formData.append('due_date', document.getElementById('taskDueDate').value);
+            
+            fetch('/add_task', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || '일정 추가 실패');
+                }
+            })
+            .catch(error => {
+                console.error('일정 추가 중 오류:', error);
+                alert('일정 추가 중 오류가 발생했습니다.');
+            });
+        });
+        
+        // 할 일 삭제 함수
+        function deleteTask(taskId) {
+            if (confirm('정말 이 일정을 삭제하시겠습니까?')) {
+                fetch(`/delete_task/${taskId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || '삭제 실패');
+                    }
+                })
+                .catch(error => {
+                    console.error('일정 삭제 중 오류:', error);
+                    alert('일정 삭제 중 오류가 발생했습니다.');
+                });
+            }
+        }
+    </script>
+    {% endif %}
 </body>
 </html> 

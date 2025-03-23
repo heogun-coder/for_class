@@ -179,69 +179,77 @@ function checkEvents(date, dayElement) {
 
 // 일정 보기 모달 열기
 function openViewScheduleModal(date) {
-    selectedDate = date;
+    document.getElementById('viewScheduleDate').textContent = formatDate(date);
+    selectedDate = formatDateForServer(date);
     
-    document.getElementById('scheduleDate').textContent = formatDisplayDate(date);
-    document.getElementById('scheduleList').innerHTML = '<p>일정을 불러오는 중...</p>';
-    
-    // 모달 표시
-    document.getElementById('scheduleViewModal').style.display = 'block';
-    
-    // 해당 날짜의 일정 가져오기
-    fetch(`/get_schedules/${date}`)
+    // 일정 목록 가져오기
+    fetch(`/get_schedules/${selectedDate}`)
         .then(response => response.json())
         .then(schedules => {
             const scheduleList = document.getElementById('scheduleList');
-            if (schedules.length > 0) {
-                let html = '';
-                schedules.forEach(schedule => {
-                    html += `
-                        <div class="schedule-item">
-                            <div class="schedule-header">
-                                <h4>${schedule.title}</h4>
-                                <button class="delete-btn" onclick="deleteSchedule(${schedule.id})">삭제</button>
-                            </div>
-                            <p>${schedule.description || '설명 없음'}</p>
-                        </div>
-                    `;
-                });
-                scheduleList.innerHTML = html;
-            } else {
-                scheduleList.innerHTML = '<p>일정이 없습니다.</p>';
+            scheduleList.innerHTML = '';
+            
+            if (schedules.length === 0) {
+                scheduleList.innerHTML = '<p>등록된 일정이 없습니다.</p>';
+                return;
             }
+            
+            schedules.forEach(schedule => {
+                const scheduleItem = document.createElement('div');
+                scheduleItem.className = 'schedule-item';
+                
+                const scheduleHeader = document.createElement('div');
+                scheduleHeader.className = 'schedule-header';
+                
+                const titleEl = document.createElement('h4');
+                titleEl.textContent = schedule.title;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '삭제';
+                deleteBtn.onclick = function() {
+                    deleteSchedule(schedule.id);
+                };
+                
+                scheduleHeader.appendChild(titleEl);
+                scheduleHeader.appendChild(deleteBtn);
+                
+                const descEl = document.createElement('p');
+                descEl.textContent = schedule.description || '내용 없음';
+                
+                scheduleItem.appendChild(scheduleHeader);
+                scheduleItem.appendChild(descEl);
+                scheduleList.appendChild(scheduleItem);
+            });
         })
-        .catch(error => {
-            console.error('일정을 불러오는 중 오류가 발생했습니다:', error);
-            document.getElementById('scheduleList').innerHTML = '<p>일정을 불러오는 중 오류가 발생했습니다.</p>';
-        });
+        .catch(error => console.error('일정을 가져오는 중 오류 발생:', error));
+    
+    document.getElementById('viewScheduleModal').style.display = 'block';
 }
 
 // 일정 삭제 함수
 function deleteSchedule(scheduleId) {
-    if (!confirm('정말로 이 일정을 삭제하시겠습니까?')) {
-        return;
+    if (confirm('정말 이 일정을 삭제하시겠습니까?')) {
+        fetch(`/delete_schedule/${scheduleId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 삭제 성공 시 목록 다시 로드
+                fetch(`/get_schedules/${selectedDate}`)
+                    .then(response => response.json())
+                    .then(schedules => updateScheduleList(schedules))
+                    .catch(error => console.error('일정을 다시 로드하는 중 오류 발생:', error));
+            } else {
+                alert(data.message || '삭제 실패: 권한이 없습니다.');
+            }
+        })
+        .catch(error => console.error('일정 삭제 중 오류 발생:', error));
     }
-    
-    fetch(`/delete_schedule/${scheduleId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('일정이 삭제되었습니다.');
-            // 현재 보고 있는 날짜의 일정 다시 로드
-            openViewScheduleModal(selectedDate);
-        } else {
-            alert(data.message || '일정 삭제 중 오류가 발생했습니다.');
-        }
-    })
-    .catch(error => {
-        console.error('일정 삭제 중 오류가 발생했습니다:', error);
-        alert('일정 삭제 중 오류가 발생했습니다.');
-    });
 }
 
 // 일정 추가 모달 열기
@@ -263,47 +271,59 @@ function closeAddModal() {
 
 // 예약 현황 표시
 function showReservations(date) {
-    selectedDate = date;
-    document.getElementById('selectedDateDisplay').textContent = formatDisplayDate(date);
-    document.getElementById('reservationsList').innerHTML = '<p>예약 정보를 불러오는 중...</p>';
+    selectedDate = formatDateForServer(date);
+    document.getElementById('selectedDateDisplay').textContent = formatDate(new Date(date));
     
-    // 해당 날짜의 예약 정보 가져오기
-    fetch(`/get_reservations/${date}`)
+    // 예약 목록 가져오기
+    fetch(`/get_reservations/${selectedDate}`)
         .then(response => response.json())
         .then(reservations => {
             const reservationsList = document.getElementById('reservationsList');
-            if (reservations.length > 0) {
-                let html = '';
-                reservations.forEach(reservation => {
-                    // 삭제 버튼 (자신의 예약인 경우에만 표시)
-                    const deleteButton = reservation.is_owner 
-                        ? `<button class="delete-btn" onclick="deleteReservation(${reservation.id})">삭제</button>` 
-                        : '';
-                    
-                    html += `
-                        <div class="reservation-slot ${reservation.is_owner ? 'my-reservation' : ''}">
-                            <div class="reservation-header">
-                                <strong>시간: ${reservation.time}</strong>
-                                ${deleteButton}
-                            </div>
-                            <p><strong>예약자:</strong> ${reservation.name}</p>
-                            <p><strong>목적:</strong> ${reservation.purpose}</p>
-                        </div>
-                    `;
-                });
-                html += `<button onclick="openReservationModal('${date}')">새 예약 만들기</button>`;
-                reservationsList.innerHTML = html;
-            } else {
-                reservationsList.innerHTML = `
-                    <p>예약된 정보가 없습니다.</p>
-                    <button onclick="openReservationModal('${date}')">예약하기</button>
-                `;
+            reservationsList.innerHTML = '';
+            
+            if (reservations.length === 0) {
+                reservationsList.innerHTML = '<p>등록된 예약이 없습니다.</p>';
+                return;
             }
+            
+            reservations.forEach(reservation => {
+                const reservationItem = document.createElement('div');
+                reservationItem.className = 'reservation-slot';
+                if (reservation.is_owner) {
+                    reservationItem.classList.add('my-reservation');
+                }
+                
+                const reservationHeader = document.createElement('div');
+                reservationHeader.className = 'reservation-header';
+                
+                const timeAndName = document.createElement('h4');
+                timeAndName.textContent = `${reservation.time} (${reservation.name})`;
+                
+                const deleteBtn = document.createElement('button');
+                // 자신의 예약만 삭제 버튼 표시 (fetch 요청 시 서버에서 관리자 권한 확인)
+                if (reservation.is_owner) {
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.textContent = '취소';
+                    deleteBtn.onclick = function() {
+                        deleteReservation(reservation.id);
+                    };
+                    reservationHeader.appendChild(deleteBtn);
+                }
+                
+                reservationHeader.appendChild(timeAndName);
+                if (reservation.is_owner) {
+                    reservationHeader.appendChild(deleteBtn);
+                }
+                
+                const purposeEl = document.createElement('p');
+                purposeEl.textContent = reservation.purpose;
+                
+                reservationItem.appendChild(reservationHeader);
+                reservationItem.appendChild(purposeEl);
+                reservationsList.appendChild(reservationItem);
+            });
         })
-        .catch(error => {
-            console.error('예약 정보를 불러오는 중 오류가 발생했습니다:', error);
-            document.getElementById('reservationsList').innerHTML = '<p>예약 정보를 불러오는 중 오류가 발생했습니다.</p>';
-        });
+        .catch(error => console.error('예약을 가져오는 중 오류 발생:', error));
 }
 
 // 예약 모달 열기
@@ -370,34 +390,78 @@ function handleReservationSubmit(event) {
 
 // 예약 삭제 함수
 function deleteReservation(reservationId) {
-    if (!confirm('정말로 이 예약을 취소하시겠습니까?')) {
-        return;
+    if (confirm('정말 이 예약을 취소하시겠습니까?')) {
+        fetch(`/delete_reservation/${reservationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 삭제 성공 시 목록 다시 로드
+                fetch(`/get_reservations/${selectedDate}`)
+                    .then(response => response.json())
+                    .then(reservations => {
+                        showReservations(new Date(selectedDate));
+                    })
+                    .catch(error => console.error('예약을 다시 로드하는 중 오류 발생:', error));
+            } else {
+                alert(data.message || '취소 실패: 권한이 없습니다.');
+            }
+        })
+        .catch(error => console.error('예약 취소 중 오류 발생:', error));
     }
-    
-    fetch(`/delete_reservation/${reservationId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('예약이 취소되었습니다.');
-            // 현재 보고 있는 날짜의 예약 정보 다시 로드
-            showReservations(selectedDate);
-        } else {
-            alert(data.message || '예약 취소 중 오류가 발생했습니다.');
-        }
-    })
-    .catch(error => {
-        console.error('예약 취소 중 오류가 발생했습니다:', error);
-        alert('예약 취소 중 오류가 발생했습니다.');
-    });
 }
 
 // 날짜 표시 형식 변환 (YYYY-MM-DD -> YYYY년 MM월 DD일)
 function formatDisplayDate(dateString) {
     const parts = dateString.split('-');
     return `${parts[0]}년 ${parts[1]}월 ${parts[2]}일`;
+}
+
+// 날짜 형식 변환 (YYYY-MM-DD -> YYYYMMDD)
+function formatDateForServer(dateString) {
+    const parts = dateString.split('-');
+    return `${parts[0]}${parts[1]}${parts[2]}`;
+}
+
+// 일정 목록 업데이트 함수
+function updateScheduleList(schedules) {
+    const scheduleList = document.getElementById('scheduleList');
+    scheduleList.innerHTML = '';
+    
+    if (schedules.length === 0) {
+        scheduleList.innerHTML = '<p>등록된 일정이 없습니다.</p>';
+        return;
+    }
+    
+    schedules.forEach(schedule => {
+        const scheduleItem = document.createElement('div');
+        scheduleItem.className = 'schedule-item';
+        
+        const scheduleHeader = document.createElement('div');
+        scheduleHeader.className = 'schedule-header';
+        
+        const titleEl = document.createElement('h4');
+        titleEl.textContent = schedule.title;
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '삭제';
+        deleteBtn.onclick = function() {
+            deleteSchedule(schedule.id);
+        };
+        
+        scheduleHeader.appendChild(titleEl);
+        scheduleHeader.appendChild(deleteBtn);
+        
+        const descEl = document.createElement('p');
+        descEl.textContent = schedule.description || '내용 없음';
+        
+        scheduleItem.appendChild(scheduleHeader);
+        scheduleItem.appendChild(descEl);
+        scheduleList.appendChild(scheduleItem);
+    });
 } 
