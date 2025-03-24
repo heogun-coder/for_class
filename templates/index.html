@@ -58,6 +58,14 @@
                     <span>실험실 예약</span>
                 </a>
             </div>
+            {% if current_user.is_admin %}
+            <div class="menu-item">
+                <a href="{{ url_for('admin_users') }}" class="menu-button">
+                    <div class="menu-icon admin-icon">👥</div>
+                    <span>사용자 관리</span>
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
     

@@ -414,6 +414,10 @@ button[type="submit"]:hover,
     background-color: #e8fff0;
 }
 
+.admin-icon {
+    background-color: #fff0f0;
+}
+
 /* 관리자 배지 스타일 */
 .admin-badge {
     background-color: #dc3545;
@@ -494,4 +498,59 @@ button[type="submit"]:hover,
 
 .btn:hover {
     background-color: #0069d9;
+}
+
+/* 소셜 로그인 스타일 */
+.social-login {
+    margin: 20px 0;
+    width: 100%;
+}
+
+.social-divider {
+    position: relative;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.social-divider:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #e0e0e0;
+    z-index: 1;
+}
+
+.social-divider span {
+    background-color: #fff;
+    padding: 0 15px;
+    position: relative;
+    z-index: 2;
+    color: #666;
+}
+
+.cognito-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 15px;
+    border-radius: 4px;
+    background-color: #232f3e;
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+}
+
+.cognito-login-btn:hover {
+    background-color: #1a2430;
+}
+
+.cognito-logo {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
 } 

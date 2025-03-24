@@ -3,12 +3,23 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from authlib.integrations.flask_client import OAuth
 import os
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 세션을 위한 비밀 키
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# AWS Cognito 설정
+oauth = OAuth(app)
+oauth.register(
+    name="cognito",
+    server_metadata_url="https://cognito-idp.us-east-2.amazonaws.com/us-east-2_EBA96hq4a/.well-known/openid-configuration",
+    client_id="1dompom8s0t0sf89h1h5ctbgp",
+    client_kwargs={"scope": "phone openid email profile"},
+    client_secret="<client secret>",  # 실제 프로덕션에서는 환경 변수 등 안전한 방법으로 관리
+)
 
 # 데이터베이스 초기화
 db = SQLAlchemy(app)
@@ -23,10 +34,12 @@ login_manager.login_message = '이 페이지에 접근하려면 로그인이 필
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
+    password_hash = db.Column(db.String(200), nullable=True)  # Cognito 사용자는 NULL 가능
     email = db.Column(db.String(100), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     is_admin = db.Column(db.Boolean, default=False)  # 관리자 여부
+    auth_type = db.Column(db.String(20), default='local')  # 'local' 또는 'cognito'
+    cognito_sub = db.Column(db.String(100), unique=True, nullable=True)  # Cognito 사용자 ID
     
     # 일정 및 예약과의 관계 설정
     schedules = db.relationship('Schedule', backref='user', lazy=True)
@@ -98,13 +111,44 @@ with app.app_context():
 # 로그인 페이지
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Cognito 인증으로부터 리다이렉트된 경우
+    if 'cognito_login' in session and 'user' in session:
+        cognito_user = session.get('user')
+        
+        # 이메일로 사용자 찾기
+        user = User.query.filter_by(email=cognito_user.get('email')).first()
+        
+        # 사용자가 없으면 새로 생성
+        if not user:
+            user = User(
+                username=cognito_user.get('preferred_username', cognito_user.get('email')),
+                email=cognito_user.get('email'),
+                auth_type='cognito',
+                cognito_sub=cognito_user.get('sub')
+            )
+            db.session.add(user)
+            db.session.commit()
+        elif user.auth_type != 'cognito':
+            # 기존 로컬 사용자를 Cognito 연결
+            user.auth_type = 'cognito'
+            user.cognito_sub = cognito_user.get('sub')
+            db.session.commit()
+            
+        login_user(user)
+        # 세션 정리
+        session.pop('cognito_login', None)
+        
+        next_page = session.pop('next_url', None)
+        return redirect(next_page or url_for('index'))
+    
+    # 일반 로그인 처리
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         
         user = User.query.filter_by(username=username).first()
         
-        if user and user.check_password(password):
+        if user and user.auth_type == 'local' and user.check_password(password):
             login_user(user)
             next_page = request.args.get('next')
             return redirect(next_page or url_for('index'))
@@ -113,11 +157,40 @@ def login():
     
     return render_template('login.html')
 
+# Cognito 로그인
+@app.route('/login/cognito')
+def cognito_login():
+    # 인증 후 리다이렉트될 URL
+    redirect_uri = url_for('cognito_callback', _external=True)
+    session['next_url'] = request.args.get('next', url_for('index'))
+    
+    return oauth.cognito.authorize_redirect(redirect_uri)
+
+# Cognito 콜백
+@app.route('/login/cognito/callback')
+def cognito_callback():
+    token = oauth.cognito.authorize_access_token()
+    user_info = oauth.cognito.parse_id_token(token)
+    session['user'] = user_info
+    session['cognito_login'] = True
+    
+    return redirect(url_for('login'))
+
 # 로그아웃
 @app.route('/logout')
 @login_required
 def logout():
+    # Cognito 사용자인 경우 Cognito 로그아웃 URL 생성
+    logout_url = None
+    if current_user.auth_type == 'cognito':
+        logout_url = oauth.cognito.client_id+'&logout_uri='+url_for('login', _external=True)
+        logout_url = 'https://lab-management.auth.us-east-2.amazoncognito.com/logout?client_id='+logout_url
+    
     logout_user()
+    session.clear()
+    
+    if logout_url:
+        return redirect(logout_url)
     return redirect(url_for('login'))
 
 # 회원가입 페이지
@@ -149,8 +222,8 @@ def register():
             flash('이미 사용 중인 이메일입니다.')
             return render_template('register.html')
         
-        # 사용자 생성
-        new_user = User(username=username, email=email)
+        # 사용자 생성 (로컬 인증)
+        new_user = User(username=username, email=email, auth_type='local')
         new_user.set_password(password)
         
         db.session.add(new_user)
@@ -362,6 +435,35 @@ def delete_task(task_id):
     task = Task.query.get_or_404(task_id)
     
     db.session.delete(task)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+# 관리자 페이지 - 사용자 관리
+@app.route('/admin/users')
+@login_required
+def admin_users():
+    if not current_user.is_admin:
+        flash('관리자만 접근할 수 있습니다.')
+        return redirect(url_for('index'))
+    
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
+
+# 사용자 권한 변경 API (관리자만)
+@app.route('/admin/users/change_role/<int:user_id>', methods=['POST'])
+@login_required
+def change_user_role(user_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': '관리자만 접근할 수 있습니다.'}), 403
+    
+    user = User.query.get_or_404(user_id)
+    
+    # 자기 자신은 변경 불가
+    if user.id == current_user.id:
+        return jsonify({'success': False, 'message': '자신의 권한은 변경할 수 없습니다.'}), 403
+    
+    user.is_admin = not user.is_admin
     db.session.commit()
     
     return jsonify({'success': True})
