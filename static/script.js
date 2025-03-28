@@ -61,19 +61,21 @@ function renderCalendar(calendarId) {
     for (let i = 0; i < firstDayOfWeek; i++) {
         const prevDate = new Date(firstDay);
         prevDate.setDate(prevDate.getDate() - (firstDayOfWeek - i));
+        const formattedDate = formatDate(prevDate);
         
         const dayElement = document.createElement('div');
         dayElement.className = 'day other-month';
         dayElement.textContent = prevDate.getDate();
+        dayElement.dataset.date = formattedDate;
         
         // 날짜가 첫 번째 줄에 표시될 경우 메소드를 분리
         if (calendarId === 'calendar') {
             dayElement.addEventListener('click', function() {
-                openViewScheduleModal(formatDate(prevDate));
+                openViewScheduleModal(formattedDate);
             });
         } else if (calendarId === 'reservationCalendar') {
             dayElement.addEventListener('click', function() {
-                showReservations(formatDate(prevDate));
+                showReservations(formattedDate);
             });
         }
         
@@ -83,10 +85,12 @@ function renderCalendar(calendarId) {
     // 현재 달의 날짜 표시
     for (let i = 1; i <= lastDay.getDate(); i++) {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
+        const formattedDate = formatDate(date);
         
         const dayElement = document.createElement('div');
         dayElement.className = 'day';
         dayElement.textContent = i;
+        dayElement.dataset.date = formattedDate;
         
         // 오늘 날짜인지 확인
         const today = new Date();
@@ -100,15 +104,12 @@ function renderCalendar(calendarId) {
         if (calendarId === 'calendar') {
             // 일정 관리 달력
             dayElement.addEventListener('click', function() {
-                openViewScheduleModal(formatDate(date));
+                openViewScheduleModal(formattedDate);
             });
-
-            // 이벤트 표시 (일정이 있는 경우)
-            checkEvents(formatDate(date), dayElement);
         } else if (calendarId === 'reservationCalendar') {
             // 예약 달력
             dayElement.addEventListener('click', function() {
-                showReservations(formatDate(date));
+                showReservations(formattedDate);
             });
         }
         
@@ -123,18 +124,20 @@ function renderCalendar(calendarId) {
     for (let i = 1; i <= remainingCells; i++) {
         const nextDate = new Date(lastDay);
         nextDate.setDate(nextDate.getDate() + i);
+        const formattedDate = formatDate(nextDate);
         
         const dayElement = document.createElement('div');
         dayElement.className = 'day other-month';
         dayElement.textContent = i;
+        dayElement.dataset.date = formattedDate;
         
         if (calendarId === 'calendar') {
             dayElement.addEventListener('click', function() {
-                openViewScheduleModal(formatDate(nextDate));
+                openViewScheduleModal(formattedDate);
             });
         } else if (calendarId === 'reservationCalendar') {
             dayElement.addEventListener('click', function() {
-                showReservations(formatDate(nextDate));
+                showReservations(formattedDate);
             });
         }
         
@@ -161,20 +164,6 @@ function setupCalendarNavigation(calendarId) {
         currentDate.setMonth(currentDate.getMonth() + 1);
         renderCalendar(calendarId);
     });
-}
-
-// 일정 확인 함수
-function checkEvents(date, dayElement) {
-    fetch(`/get_schedules/${date}`)
-        .then(response => response.json())
-        .then(schedules => {
-            if (schedules.length > 0) {
-                const eventDot = document.createElement('div');
-                eventDot.className = 'event-dot';
-                dayElement.appendChild(eventDot);
-            }
-        })
-        .catch(error => console.error('일정을 불러오는 중 오류가 발생했습니다:', error));
 }
 
 // 일정 보기 모달 열기
@@ -206,8 +195,25 @@ function openViewScheduleModal(date) {
                     `;
                 });
                 scheduleList.innerHTML = html;
+
+                // 일정이 있는 날짜에 표시 추가
+                const dayElement = document.querySelector(`.day[data-date="${date}"]`);
+                if (dayElement && !dayElement.querySelector('.event-dot')) {
+                    const eventDot = document.createElement('div');
+                    eventDot.className = 'event-dot';
+                    dayElement.appendChild(eventDot);
+                }
             } else {
                 scheduleList.innerHTML = '<p>일정이 없습니다.</p>';
+                
+                // 일정이 없는 경우 event-dot 제거
+                const dayElement = document.querySelector(`.day[data-date="${date}"]`);
+                if (dayElement) {
+                    const eventDot = dayElement.querySelector('.event-dot');
+                    if (eventDot) {
+                        eventDot.remove();
+                    }
+                }
             }
         })
         .catch(error => {

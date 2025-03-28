@@ -553,4 +553,30 @@ button[type="submit"]:hover,
     width: 24px;
     height: 24px;
     margin-right: 10px;
+}
+
+.hint-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 10px;
+    padding: 0 10px;
+    text-align: center;
+}
+
+.cognito-test-btn {
+    display: block;
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px 15px;
+    background-color: #17a2b8;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.cognito-test-btn:hover {
+    background-color: #138496;
+    color: white;
 } 

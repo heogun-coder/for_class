@@ -157,6 +157,23 @@ def login():
     
     return render_template('login.html')
 
+# 로컬 개발용 Cognito 테스트 로그인 (실제 배포 시 제거)
+@app.route('/test-cognito-login')
+def test_cognito_login():
+    # 테스트 Cognito 사용자 정보 생성
+    test_user_info = {
+        'sub': 'test-cognito-user-id',
+        'email': 'test-cognito@example.com',
+        'preferred_username': 'cognito_user'
+    }
+    
+    # 세션에 저장
+    session['cognito_login'] = True
+    session['user'] = test_user_info
+    
+    # 로그인 프로세스로 리디렉션
+    return redirect(url_for('login'))
+
 # Cognito 로그인
 @app.route('/login/cognito')
 def cognito_login():
