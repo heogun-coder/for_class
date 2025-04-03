@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>시약 추가</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="add">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">시약명</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lab_type" class="form-label">실험실</label>
+                        <select class="form-select" id="lab_type" name="lab_type" required>
+                            <option value="">실험실 선택</option>
+                            <option value="물리">물리실험실</option>
+                            <option value="화학">화학실험실</option>
+                            <option value="생명과학">생명과학실험실</option>
+                            <option value="지구과학">지구과학실험실</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">수량</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="0" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">시약 추가</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>시약 목록</h3>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for reagent in reagents %}
+                    <div class="list-group-item">
+                        <h5 class="mb-1">{{ reagent.name }}</h5>
+                        <p class="mb-1">실험실: {{ reagent.lab_type }}</p>
+                        <p class="mb-1">수량: {{ reagent.quantity }}</p>
+                        <form method="POST" action="{{ url_for('manage_reagents') }}">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="reagent_id" value="{{ reagent.id }}">
+                            <button type="submit" class="btn btn-danger btn-sm">삭제</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -32,9 +32,11 @@ class Schedule(db.Model):
 
     def to_dict(self):
         return {
+            'id': self.id,
             'title': self.title,
             'start': self.date.strftime('%Y-%m-%d'),
-            'description': self.description
+            'description': self.description,
+            'user_id': self.user_id
         }
 
 # 실험실 예약 모델
@@ -68,9 +70,8 @@ def load_user(user_id):
 @app.route('/')
 def index():
     if current_user.is_authenticated:
-        # 최근 일정 5개 가져오기
-        recent_schedules = Schedule.query.filter_by(user_id=current_user.id)\
-            .order_by(Schedule.date.desc()).limit(5).all()
+        # 최근 일정 5개 가져오기 (모든 사용자의 일정)
+        recent_schedules = Schedule.query.order_by(Schedule.date.desc()).limit(5).all()
         return render_template('index.html', schedules=recent_schedules)
     return render_template('index.html')
 
@@ -112,7 +113,8 @@ def logout():
 @app.route('/calendar')
 @login_required
 def calendar():
-    schedules = Schedule.query.filter_by(user_id=current_user.id).all()
+    # 모든 사용자의 일정 가져오기
+    schedules = Schedule.query.order_by(Schedule.date).all()
     schedule_list = [schedule.to_dict() for schedule in schedules]
     return render_template('calendar.html', schedules=schedule_list)
 
@@ -162,8 +164,60 @@ def lab_reservation():
         db.session.commit()
         return redirect(url_for('lab_reservation'))
     
-    reservations = LabReservation.query.filter_by(user_id=current_user.id).all()
+    # 모든 사용자의 예약 현황 가져오기
+    reservations = LabReservation.query.order_by(LabReservation.date, LabReservation.time_slot).all()
     return render_template('lab_reservation.html', reservations=reservations)
+
+@app.route('/delete_schedule/<int:schedule_id>', methods=['POST'])
+@login_required
+def delete_schedule(schedule_id):
+    schedule = Schedule.query.get_or_404(schedule_id)
+    if schedule.user_id == current_user.id:
+        db.session.delete(schedule)
+        db.session.commit()
+        flash('일정이 삭제되었습니다.')
+    return redirect(url_for('calendar'))
+
+@app.route('/cancel_reservation/<int:reservation_id>', methods=['POST'])
+@login_required
+def cancel_reservation(reservation_id):
+    reservation = LabReservation.query.get_or_404(reservation_id)
+    if reservation.user_id == current_user.id:
+        db.session.delete(reservation)
+        db.session.commit()
+        flash('예약이 취소되었습니다.')
+    return redirect(url_for('lab_reservation'))
+
+@app.route('/manage_reagents', methods=['GET', 'POST'])
+@login_required
+def manage_reagents():
+    if not current_user.is_admin:
+        flash('관리자만 접근할 수 있습니다.')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add':
+            name = request.form.get('name')
+            lab_type = request.form.get('lab_type')
+            quantity = int(request.form.get('quantity'))
+            
+            reagent = Reagent(name=name, lab_type=lab_type, quantity=quantity)
+            db.session.add(reagent)
+            flash('시약이 추가되었습니다.')
+            
+        elif action == 'delete':
+            reagent_id = request.form.get('reagent_id')
+            reagent = Reagent.query.get_or_404(reagent_id)
+            db.session.delete(reagent)
+            flash('시약이 삭제되었습니다.')
+            
+        db.session.commit()
+        return redirect(url_for('manage_reagents'))
+    
+    reagents = Reagent.query.all()
+    return render_template('manage_reagents.html', reagents=reagents)
 
 @app.route('/reagent_loan', methods=['GET', 'POST'])
 @login_required
@@ -188,7 +242,8 @@ def reagent_loan():
         flash('Not enough reagents available')
     
     reagents = Reagent.query.all()
-    loans = ReagentLoan.query.filter_by(user_id=current_user.id).all()
+    # 모든 사용자의 대여 현황 가져오기
+    loans = ReagentLoan.query.order_by(ReagentLoan.loan_date.desc()).all()
     return render_template('reagent_loan.html', reagents=reagents, loans=loans)
 
 @app.route('/return_reagent/<int:loan_id>', methods=['POST'])

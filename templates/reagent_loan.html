@@ -42,21 +42,24 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <h3>나의 대여 현황</h3>
+                <h3>대여 현황</h3>
             </div>
             <div class="card-body">
                 <div class="list-group">
                     {% for loan in loans %}
                     <div class="list-group-item">
                         <h5 class="mb-1">{{ loan.reagent.name }}</h5>
+                        <p class="mb-1">대여자: {{ loan.user.username }}</p>
                         <p class="mb-1">대여일: {{ loan.loan_date.strftime('%Y-%m-%d') }}</p>
                         <p class="mb-1">수량: {{ loan.quantity }}</p>
                         {% if loan.return_date %}
                         <p class="mb-1">반납일: {{ loan.return_date.strftime('%Y-%m-%d') }}</p>
                         {% else %}
+                        {% if loan.user_id == current_user.id %}
                         <form method="POST" action="{{ url_for('return_reagent', loan_id=loan.id) }}">
                             <button type="submit" class="btn btn-warning btn-sm">반납하기</button>
                         </form>
+                        {% endif %}
                         {% endif %}
                     </div>
                     {% endfor %}
