@@ -1,168 +1,61 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실험실 관리 시스템</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>실험실 관리 시스템</h1>
-            <div class="user-info">
-                <div id="clock" class="clock"></div>
-                <div class="user-name">{{ current_user.username }}님 환영합니다</div>
-                <a href="{{ url_for('logout') }}" class="logout-btn">로그아웃</a>
-                {% if current_user.is_admin %}
-                <span class="admin-badge">관리자</span>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>최근 일정</h3>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_authenticated %}
+                    {% if schedules %}
+                        <div class="list-group">
+                            {% for schedule in schedules %}
+                                <div class="list-group-item">
+                                    <h5 class="mb-1">{{ schedule.title }}</h5>
+                                    <p class="mb-1">{{ schedule.description }}</p>
+                                    <small class="text-muted">{{ schedule.date.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p>등록된 일정이 없습니다.</p>
+                    {% endif %}
+                {% else %}
+                    <p>로그인 후 일정을 확인하실 수 있습니다.</p>
                 {% endif %}
             </div>
-        </header>
-        
-        <div class="upcoming-tasks">
-            <h2>다가오는 중요 일정</h2>
-            {% if upcoming_tasks %}
-                <ul class="task-list">
-                    {% for task in upcoming_tasks %}
-                    <li class="task-item">
-                        <div class="task-header">
-                            <span class="task-title">{{ task.title }}</span>
-                            <span class="task-date">기한: {{ task.due_date }}</span>
-                            {% if current_user.is_admin %}
-                            <button class="delete-btn" onclick="deleteTask('{{ task.id }}')">삭제</button>
-                            {% endif %}
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>등록된 일정이 없습니다.</p>
-            {% endif %}
-            
-            {% if current_user.is_admin %}
-            <button id="addTaskBtn" class="btn">새 일정 추가</button>
-            {% endif %}
-        </div>
-
-        <div class="main-menu">
-            <div class="menu-item">
-                <a href="{{ url_for('calendar') }}" class="menu-button">
-                    <div class="menu-icon calendar-icon">📅</div>
-                    <span>일정 관리</span>
-                </a>
-            </div>
-            <div class="menu-item">
-                <a href="{{ url_for('reservation') }}" class="menu-button">
-                    <div class="menu-icon lab-icon">🔬</div>
-                    <span>실험실 예약</span>
-                </a>
-            </div>
-            {% if current_user.is_admin %}
-            <div class="menu-item">
-                <a href="{{ url_for('admin_users') }}" class="menu-button">
-                    <div class="menu-icon admin-icon">👥</div>
-                    <span>사용자 관리</span>
-                </a>
-            </div>
-            {% endif %}
         </div>
     </div>
-    
-    <!-- 할 일 추가 모달 (관리자만) -->
-    {% if current_user.is_admin %}
-    <div id="addTaskModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>새 일정 추가</h2>
-            <form id="taskForm">
-                <div class="form-group">
-                    <label for="taskTitle">제목</label>
-                    <input type="text" id="taskTitle" name="title" required>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>빠른 메뉴</h3>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('calendar') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-calendar"></i> 일정 관리
+                        </a>
+                        <a href="{{ url_for('lab_reservation') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-building"></i> 실험실 예약
+                        </a>
+                        <a href="{{ url_for('reagent_loan') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-flask"></i> 시약 대여
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-box-arrow-in-right"></i> 로그인
+                        </a>
+                        <a href="{{ url_for('register') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person-plus"></i> 회원가입
+                        </a>
+                    {% endif %}
                 </div>
-                <div class="form-group">
-                    <label for="taskDueDate">기한</label>
-                    <input type="date" id="taskDueDate" name="due_date" required>
-                </div>
-                <button type="submit" class="btn">추가</button>
-            </form>
+            </div>
         </div>
     </div>
-    {% endif %}
-    
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    
-    {% if current_user.is_admin %}
-    <script>
-        // 할 일 추가 모달 기능
-        const addTaskBtn = document.getElementById('addTaskBtn');
-        const addTaskModal = document.getElementById('addTaskModal');
-        const closeBtn = addTaskModal.querySelector('.close');
-        const taskForm = document.getElementById('taskForm');
-        
-        addTaskBtn.addEventListener('click', function() {
-            addTaskModal.style.display = 'block';
-        });
-        
-        closeBtn.addEventListener('click', function() {
-            addTaskModal.style.display = 'none';
-        });
-        
-        window.addEventListener('click', function(event) {
-            if (event.target == addTaskModal) {
-                addTaskModal.style.display = 'none';
-            }
-        });
-        
-        taskForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            const formData = new FormData();
-            formData.append('title', document.getElementById('taskTitle').value);
-            formData.append('due_date', document.getElementById('taskDueDate').value);
-            
-            fetch('/add_task', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.message || '일정 추가 실패');
-                }
-            })
-            .catch(error => {
-                console.error('일정 추가 중 오류:', error);
-                alert('일정 추가 중 오류가 발생했습니다.');
-            });
-        });
-        
-        // 할 일 삭제 함수
-        function deleteTask(taskId) {
-            if (confirm('정말 이 일정을 삭제하시겠습니까?')) {
-                fetch(`/delete_task/${taskId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        alert(data.message || '삭제 실패');
-                    }
-                })
-                .catch(error => {
-                    console.error('일정 삭제 중 오류:', error);
-                    alert('일정 삭제 중 오류가 발생했습니다.');
-                });
-            }
-        }
-    </script>
-    {% endif %}
-</body>
-</html> 
+</div>
+{% endblock %} 

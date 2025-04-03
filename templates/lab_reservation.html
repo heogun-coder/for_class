@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>실험실 예약 현황</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>실험실</th>
+                                <th>날짜</th>
+                                <th>시간</th>
+                                <th>예약자</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reservation in reservations %}
+                            <tr>
+                                <td>{{ reservation.lab_type }}</td>
+                                <td>{{ reservation.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ reservation.time_slot }}</td>
+                                <td>{{ reservation.user.username }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>실험실 예약</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="lab_type" class="form-label">실험실 선택</label>
+                        <select class="form-select" id="lab_type" name="lab_type" required>
+                            <option value="물리">물리 실험실</option>
+                            <option value="화학">화학 실험실</option>
+                            <option value="생명과학">생명과학 실험실</option>
+                            <option value="지구과학">지구과학 실험실</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">날짜</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="time_slot" class="form-label">시간 선택</label>
+                        <select class="form-select" id="time_slot" name="time_slot" required>
+                            <option value="자습1">자습1</option>
+                            <option value="자습2">자습2</option>
+                            <option value="자습3">자습3</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">예약하기</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>시약 목록</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>시약명</th>
+                                <th>실험실</th>
+                                <th>남은 수량</th>
+                                <th>대여</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reagent in reagents %}
+                            <tr>
+                                <td>{{ reagent.name }}</td>
+                                <td>{{ reagent.lab_type }}</td>
+                                <td>{{ reagent.quantity }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-primary btn-sm" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#loanModal{{ reagent.id }}">
+                                        대여하기
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>나의 대여 현황</h3>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for loan in loans %}
+                    <div class="list-group-item">
+                        <h5 class="mb-1">{{ loan.reagent.name }}</h5>
+                        <p class="mb-1">대여일: {{ loan.loan_date.strftime('%Y-%m-%d') }}</p>
+                        <p class="mb-1">수량: {{ loan.quantity }}</p>
+                        {% if loan.return_date %}
+                        <p class="mb-1">반납일: {{ loan.return_date.strftime('%Y-%m-%d') }}</p>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('return_reagent', loan_id=loan.id) }}">
+                            <button type="submit" class="btn btn-warning btn-sm">반납하기</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for reagent in reagents %}
+<!-- 대여 모달 -->
+<div class="modal fade" id="loanModal{{ reagent.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ reagent.name }} 대여</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('reagent_loan') }}">
+                    <input type="hidden" name="reagent_id" value="{{ reagent.id }}">
+                    <div class="mb-3">
+                        <label for="quantity{{ reagent.id }}" class="form-label">수량</label>
+                        <input type="number" class="form-control" id="quantity{{ reagent.id }}" 
+                               name="quantity" min="1" max="{{ reagent.quantity }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="loan_date{{ reagent.id }}" class="form-label">대여일</label>
+                        <input type="date" class="form-control" id="loan_date{{ reagent.id }}" 
+                               name="loan_date" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">대여하기</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %} 

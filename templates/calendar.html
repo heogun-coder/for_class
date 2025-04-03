@@ -1,71 +1,60 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>일정 관리 - 실험실 관리 시스템</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>일정 관리</h1>
-            <div class="user-info">
-                <div id="clock" class="clock"></div>
-                <div class="user-name">{{ current_user.username }}님 환영합니다</div>
-                <a href="{{ url_for('logout') }}" class="logout-btn">로그아웃</a>
-            </div>
-            <a href="{{ url_for('index') }}" class="back-button">메인으로 돌아가기</a>
-        </header>
+{% extends "base.html" %}
 
-        <div class="calendar-container">
-            <div class="calendar-header">
-                <button id="prevMonth">&lt;</button>
-                <h2 id="currentMonth"></h2>
-                <button id="nextMonth">&gt;</button>
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>일정 달력</h3>
             </div>
-            <div class="weekdays">
-                <div>일</div>
-                <div>월</div>
-                <div>화</div>
-                <div>수</div>
-                <div>목</div>
-                <div>금</div>
-                <div>토</div>
-            </div>
-            <div id="calendar" class="days"></div>
-        </div>
-
-        <!-- 일정 보기 모달 -->
-        <div id="scheduleViewModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeViewModal()">&times;</span>
-                <h2 id="scheduleDate"></h2>
-                <div id="scheduleList"></div>
-                <button onclick="openAddModal()">새 일정 추가</button>
+            <div class="card-body">
+                <div id="calendar"></div>
             </div>
         </div>
-
-        <!-- 일정 추가 모달 -->
-        <div id="scheduleAddModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeAddModal()">&times;</span>
-                <h2>새 일정 추가</h2>
-                <form id="scheduleForm" action="/add_schedule" method="post">
-                    <input type="hidden" id="selectedDate" name="date">
-                    <div class="form-group">
-                        <label for="title">제목:</label>
-                        <input type="text" id="title" name="title" required>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>일정 추가</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_schedule') }}">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">제목</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
                     </div>
-                    <div class="form-group">
-                        <label for="description">설명:</label>
-                        <textarea id="description" name="description" rows="4"></textarea>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">설명</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                     </div>
-                    <button type="submit">저장</button>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">날짜</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">일정 추가</button>
                 </form>
             </div>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
-</html> 
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var scheduleData = JSON.parse('{{ schedules|tojson|safe }}');
+    
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ko',
+        events: scheduleData,
+        eventClick: function(info) {
+            alert('일정: ' + info.event.title + '\n설명: ' + info.event.extendedProps.description);
+        }
+    });
+    
+    calendar.render();
+});
+</script>
+{% endblock %} 
