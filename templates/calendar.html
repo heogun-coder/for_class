@@ -8,7 +8,7 @@
                 <h3>일정 달력</h3>
             </div>
             <div class="card-body">
-                <div id="calendar"></div>
+                <div id="calendar" style="height: 600px;"></div>
             </div>
         </div>
     </div>
@@ -37,43 +37,41 @@
         </div>
     </div>
 </div>
+
+<!-- 데이터를 HTML 데이터 속성으로 전달 -->
+<div id="calendar-data" data-events='{{ schedules|safe }}' data-user-id="{{ user_id }}"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// 서버에서 전달받은 데이터를 JavaScript 변수로 변환
-const scheduleData = JSON.parse('{{ schedules|tojson|safe }}');
-const currentUserId = parseInt('{{ current_user.id }}');
-
 document.addEventListener('DOMContentLoaded', function() {
-    const calendarEl = document.getElementById('calendar');
+    // HTML 데이터 속성에서 데이터 가져오기
+    var dataElement = document.getElementById('calendar-data');
+    var events = JSON.parse(dataElement.getAttribute('data-events'));
+    var userId = parseInt(dataElement.getAttribute('data-user-id'));
     
-    const calendar = new FullCalendar.Calendar(calendarEl, {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        locale: 'ko',
         headerToolbar: {
             left: 'prev,next today',
-            center: 'title',
+            center: 'title', 
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
-        events: scheduleData,
+        events: events,
         eventClick: function(info) {
-            if (info.event.extendedProps.user_id === currentUserId) {
+            if (info.event.extendedProps.user_id === userId) {
                 if (confirm('이 일정을 삭제하시겠습니까?')) {
-                    const deleteUrl = "{{ url_for('delete_schedule', schedule_id=0) }}".replace('0', info.event.id);
-                    fetch(deleteUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    }).then(function(response) {
-                        if (response.ok) {
-                            location.reload();
-                        }
-                    });
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/delete_schedule/' + info.event.id;
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             }
-        }
+        },
+        height: 'auto',
+        locale: 'ko'
     });
     
     calendar.render();

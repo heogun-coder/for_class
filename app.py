@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -35,8 +36,10 @@ class Schedule(db.Model):
             'id': self.id,
             'title': self.title,
             'start': self.date.strftime('%Y-%m-%d'),
+            'end': self.date.strftime('%Y-%m-%d'),
             'description': self.description,
-            'user_id': self.user_id
+            'user_id': self.user_id,
+            'allDay': True
         }
 
 # 실험실 예약 모델
@@ -116,7 +119,8 @@ def calendar():
     # 모든 사용자의 일정 가져오기
     schedules = Schedule.query.order_by(Schedule.date).all()
     schedule_list = [schedule.to_dict() for schedule in schedules]
-    return render_template('calendar.html', schedules=schedule_list)
+    schedule_json = json.dumps(schedule_list)
+    return render_template('calendar.html', schedules=schedule_json, user_id=current_user.id)
 
 @app.route('/add_schedule', methods=['POST'])
 @login_required
