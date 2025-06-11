@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <a href="{{ url_for('messages') }}" class="btn btn-outline-secondary btn-sm me-2">
+                        <i class="fas fa-arrow-left"></i> 뒤로
+                    </a>
+                    {{ other_user.username }}와의 채팅
+                    {% if other_user.is_admin %}
+                    <span class="badge bg-primary ms-2">관리자</span>
+                    {% endif %}
+                </h5>
+                <div id="typing-indicator" class="text-muted" style="display: none;">
+                    <small>{{ other_user.username }}이(가) 입력 중...</small>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="chat-messages" class="p-3" style="height: 400px; overflow-y: auto;">
+                    {% for message in messages %}
+                    <div class="mb-3 {% if message.sender_id == current_user.id %}text-end{% endif %}">
+                        <div class="d-inline-block">
+                            <div class="{% if message.sender_id == current_user.id %}bg-primary text-white{% else %}bg-light{% endif %} rounded p-2" style="max-width: 70%;">
+                                <div class="message-content">{{ message.content }}</div>
+                                <small class="{% if message.sender_id == current_user.id %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ message.timestamp }}
+                                    {% if message.sender_id == current_user.id %}
+                                    <button class="btn btn-sm btn-link text-white-50 p-0 ms-2 delete-message-btn" data-message-id="{{ message.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="border-top p-3">
+                    <form id="message-form" class="d-flex">
+                        <input type="text" id="message-input" class="form-control me-2" placeholder="메시지를 입력하세요..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary">전송</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.message-content {
+    word-wrap: break-word;
+}
+#chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+#chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+#chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+</style>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script>
+// 채팅 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChatPage("{{ other_user.id }}", "{{ current_user.id }}");
+});
+</script>
+{% endblock %} 

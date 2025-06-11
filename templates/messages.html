@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>메시지</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">사용자 목록</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for user in users %}
+                            <a href="{{ url_for('chat', user_id=user.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ user.username }}</strong>
+                                    {% if user.is_admin %}
+                                    <span class="badge bg-primary ms-2">관리자</span>
+                                    {% endif %}
+                                </div>
+                                <span class="badge bg-secondary rounded-pill" id="unread-{{ user.id }}">0</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">채팅을 시작하려면 왼쪽에서 사용자를 선택하세요</h5>
+                        <p class="text-muted">실시간으로 메시지를 주고받을 수 있습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/messages.js') }}"></script>
+{% endblock %} 
