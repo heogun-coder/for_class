@@ -48,17 +48,6 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('reagent_loan') }}">시약 대여</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link position-relative" href="{{ url_for('messages') }}">
-                            <i class="fas fa-comments"></i> 메시지
-                            <span id="unread-badge" class="message-badge" style="display: none;">0</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('chat_rooms') }}">
-                            <i class="fas fa-users"></i> 그룹 채팅
-                        </a>
-                    </li>
                     {% if current_user.is_admin %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('manage_reagents') }}">시약 관리</a>
